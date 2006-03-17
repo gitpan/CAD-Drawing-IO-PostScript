@@ -1,11 +1,10 @@
 package CAD::Drawing::IO::PostScript;
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use CAD::Drawing;
 use CAD::Drawing::Defined;
 use PostScript::Simple;
 
-our %ps_functions;
 
 use strict;
 use Carp;
@@ -24,17 +23,21 @@ package.
 
 =head1 NOTICE
 
-This module should be considered pre-ALPHA and untested.
+This module should be considered pre-ALPHA and untested.  Some features
+rely on the author's hacks to PostScript::Simple, which may or may not
+have been incorporated into the CPAN distribution of PostScript::Simple.
+For bleeding-edge code, see http://ericwilhelm.homeip.net.
 
 =head1 AUTHOR
 
-  Eric L. Wilhelm
-  ewilhelm at sbcglobal dot net
-  http://pages.sbcglobal.net/mycroft
+Eric L. Wilhelm <ewilhelm at cpan dot org>
+
+http://scratchcomputing.com
 
 =head1 COPYRIGHT
 
-This module is copyright (C) 2003 by Eric L. Wilhelm and A. Zahner Co.
+This module is copyright (C) 2005-2006 by Eric L. Wilhelm.  Portions
+copyright (C) 2003 by Eric L. Wilhelm and A. Zahner Co.
 
 =head1 LICENSE
 
@@ -50,9 +53,9 @@ You may use this software under one of the following licenses:
 
 =head1 NO WARRANTY
 
-This software is distributed with ABSOLUTELY NO WARRANTY.  The author
-and his employer will in no way be held liable for any loss or damages
-resulting from its use.
+This software is distributed with ABSOLUTELY NO WARRANTY.  The author,
+his former employer, and any other contributors will in no way be held
+liable for any loss or damages resulting from its use.
 
 =head1 Modifications
 
@@ -68,28 +71,21 @@ notification of any intended changes or extensions would be most helpful
 in avoiding repeated work for all parties involved.  Please contact the
 author with any such development plans.
 
-
 =head1 SEE ALSO
 
   CAD::Drawing
   CAD::Drawing::IO
   PostScript::Simple
 
-=head1 Changes
-
-  0.01 First public release
-  0.02 Minor improvements
-
 =cut
+
+########################################################################
+# the following are required to be a disc I/O plugin:
+our $can_save_type = "ps";
 
 =head1 Requisite Plug-in Functions
 
 See CAD::Drawing::IO for a description of the plug-in architecture.
-
-=cut
-########################################################################
-# the following are required to be a disc I/O plugin:
-our $can_save_type = "ps";
 
 =head2 check_type
 
@@ -105,7 +101,7 @@ sub check_type {
 		($type eq "ps") && return("ps");
 		return();
 	}
-	elsif($filename =~ m/\.ps$/) {
+	elsif($filename =~ m/\.e?ps$/) {
 		return("ps");
 	}
 	return();
@@ -113,8 +109,6 @@ sub check_type {
 
 ########################################################################
 =head1 Methods
-
-=cut
 
 =head2 load
 
@@ -139,6 +133,20 @@ sub save {
 	my $sp = 30;
 	(ref($opt) eq "HASH") && (%opts = %$opt);
 	my $outobj;
+	if($filename =~ m/\.eps/) {
+		# implies eps fit
+		my @ext = $self->OrthExtents($opt);
+		my ($x, $y) = map({$_->[1] - $_->[0]} @ext);
+		$sp = 0;
+		# print "eps will be $x by $y\n";
+		my $obj = PostScript::Simple->new(
+					eps    => 1,
+					xsize  => $x,
+					ysize  => $y,
+					colour => 1,
+					);
+		$opts{readymadeobject} = $obj;
+	}
 	unless($opts{"readymadeobject"} ) {
 		$outobj = new PostScript::Simple(
 						landscape => 1,
@@ -147,10 +155,10 @@ sub save {
 						colour => 1,
 						);
 		$outobj->newpage;
-		}
+	}
 	else {
 		$outobj = $opts{"readymadeobject"};
-		}
+	}
 
 	# now can get the size from the object and use it to set the scale of
 	# things
@@ -216,6 +224,8 @@ sub save {
 		filled => $filledopt,
 		accuracy => $accuracy,
 		);
+
+	our %ps_functions;
 	$drw->outloop(\%ps_functions, \%ps_data);
 	$opts{show} && ($drw->show(hang => 1));
 	return($outobj->output($filename));
@@ -280,6 +290,17 @@ our %ps_functions = (
 		my $rad = sprintf("%0.${acc}f",  $circ->{rad});
 		$ps->circle({filled=>$filled},  @pt, $rad);
 	},
+	# points are a fake circle:
+	points => sub {
+		my ($circ, $data) = @_;
+		my $ps = $data->{psobj};
+		my $filled = $data->{filled};
+		my $acc = $data->{accuracy};
+		my @pt = map({sprintf("%0.${acc}f", $_)} @{$circ->{pt}}[0,1]);
+		# XXX this is SO lame!
+		my $rad = 0.01;
+		$ps->circle({filled=>$filled},  @pt, $rad);
+	},
 	arcs => sub {
 		my ($arc, $data) = @_;
 		my $ps = $data->{psobj};
@@ -297,7 +318,14 @@ our %ps_functions = (
 		my $font = $text->{font} ? $text->{font} : $data->{font};
 		$ps->setfont($font, $text->{height});
 		my @call = (@pt, $text->{string});
-		$text->{align} && unshift(@call, {align => $text->{align}});
+		# XXX no rotation support
+		my %options;
+		if($text->{angle}) {
+			$options{rotate} = $text->{angle} * 180 / $pi;
+		}
+		$text->{align} and ($options{align} = $text->{align});
+		$text->{valign} and ($options{valign} = $text->{valign});
+		%options and unshift(@call, \%options);
 		$ps->text(@call);
 	},
 );

@@ -1,79 +1,19 @@
-NAME
-    CAD::Drawing::IO::PostScript - PostScript output methods
+CAD::Drawing::IO::PostScript
 
-Description
-    I would like this module to both load and save PostScript vector
-    graphics, but I have not yet found a suitable PostScript parsing
-    package.
+INSTALLATION
 
-NOTICE
-    This module should be considered pre-ALPHA and untested.
+To install this module, run the following commands:
 
-AUTHOR
-      Eric L. Wilhelm
-      ewilhelm at sbcglobal dot net
-      http://pages.sbcglobal.net/mycroft
+    perl Build.PL
+    ./Build
+    ./Build test
+    ./Build install
 
-COPYRIGHT
-    This module is copyright (C) 2003 by Eric L. Wilhelm and A. Zahner Co.
 
-LICENSE
-    This module is distributed under the same terms as Perl. See the Perl
-    source package for details.
+DOCUMENTATION
 
-    You may use this software under one of the following licenses:
+After installing, you can find documentation for this module with the perldoc command.
 
-      (1) GNU General Public License
-        (found at http://www.gnu.org/copyleft/gpl.html)
-      (2) Artistic License
-        (found at http://www.perl.com/pub/language/misc/Artistic.html)
+    perldoc CAD::Drawing::IO::PostScript
 
-NO WARRANTY
-    This software is distributed with ABSOLUTELY NO WARRANTY. The author and
-    his employer will in no way be held liable for any loss or damages
-    resulting from its use.
-
-Modifications
-    The source code of this module is made freely available and
-    distributable under the GPL or Artistic License. Modifications to and
-    use of this software must adhere to one of these licenses. Changes to
-    the code should be noted as such and this notification (as well as the
-    above copyright information) must remain intact on all copies of the
-    code.
-
-    Additionally, while the author is actively developing this code,
-    notification of any intended changes or extensions would be most helpful
-    in avoiding repeated work for all parties involved. Please contact the
-    author with any such development plans.
-
-SEE ALSO
-      CAD::Drawing
-      CAD::Drawing::IO
-      PostScript::Simple
-
-Changes
-      0.01 First public release
-      0.02 Minor improvements
-
-Requisite Plug-in Functions
-    See CAD::Drawing::IO for a description of the plug-in architecture.
-
-  check_type
-
-    Returns true if $type is "circ" or $filename is a directory containing a
-    ".circ" file.
-
-      $fact = check_type($filename, $type);
-
-  load
-
-      load();
-
-  save
-
-      $drw->save($filename, \%opts);
-
-  PostScript::Simple::setpscolor
-
-      PostScript::Simple::setpscolor();
 
